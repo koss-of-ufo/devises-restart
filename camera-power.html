@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Перезагрузка камер - Документация VBT</title>
+  <link rel="stylesheet" href="../../styles.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    /* Стили для формы управления камерами */
+    #camera-control-form {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1em;
+      background: #f7f7fa;
+      border: 1px solid #d0d0e0;
+      border-radius: 8px;
+      padding: 1em 1.5em;
+      margin-bottom: 1em;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    #camera-control-form label {
+      font-weight: 500;
+      margin-right: 0.3em;
+    }
+
+    #camera-control-form select {
+      font-size: 1.05em;
+      padding: 0.2em 0.7em;
+      border-radius: 4px;
+      border: 1px solid #b0b0c0;
+      background: #fff;
+    }
+
+    #generated-link-container {
+      display: block;
+      margin-top: 0.7em;
+      padding: 0.7em 1em;
+      background: #eaf6ff;
+      border: 1px solid #b3d8ff;
+      border-radius: 6px;
+      font-size: 1.1em;
+      word-break: break-all;
+      max-width: 100%;
+    }
+
+    #generated-link {
+      color: #1565c0;
+      font-weight: 600;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+
+    #generated-link:hover {
+      color: #0d47a1;
+    }
+
+    /* Toggle switch for on/off */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 54px;
+      height: 28px;
+      vertical-align: middle;
+      margin: 0 0.7em;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .3s;
+      border-radius: 28px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    input:checked+.slider {
+      background-color: #4caf50;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(26px);
+    }
+
+    .switch-label {
+      font-size: 1.05em;
+      font-weight: 500;
+      min-width: 60px;
+      display: inline-block;
+      text-align: left;
+      margin-left: 0.5em;
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="../../index.html">Главная</a>
+      <a href="../../bnr-search.html">Поиск купюр BNR</a>
+      <a href="../../pan-generator.html">Генерация SH+SQL</a>
+      <a href="../../kp/setup-guide.html">Настройка КП</a>
+      <a href="../index.html">VBT</a>
+    </div>
+  </nav>
+
+  <!-- Модальное окно для увеличенных изображений -->
+  <div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <img class="modal-content" id="modalImage" />
+  </div>
+
+  <div class="container">
+    <h1>Перезагрузка камер (GRNZ)</h1>
+
+    <div class="section">
+      <h2>Расположение камер</h2>
+      <div class="image-container">
+        <img src="../img/IP-name-cameras.png" alt="Расположение камер" class="guide-image" />
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Управление перезагрузкам камер</h2>
+      <p>Выберите плазу, номер камеры и действие, чтобы получить ссылку для управления питанием камеры:</p>
+      <form id="camera-control-form" style="margin-bottom: 1em;">
+        <label for="plaza-select">Плаза:</label>
+        <select id="plaza-select" name="plaza">
+          <option value="10.2.60.7">TP1</option>
+          <option value="10.2.62.7">TP1.2</option>
+          <option value="10.2.64.7">TP2</option>
+          <option value="10.2.68.7">TP3</option>
+          <option value="10.2.72.7">TP4</option>
+          <option value="10.2.76.7">TP5</option>
+          <option value="10.2.78.7">TP5.2</option>
+        </select>
+        &nbsp;
+        <label for="camera-number">Камера ГРНЗ:</label>
+        <select id="camera-number" name="camera">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="11">11</option>
+          <option value="12">12</option>
+        </select>
+        &nbsp;
+        <label>Действие:</label>
+        <label class="switch">
+          <input type="checkbox" id="action-toggle">
+          <span class="slider"></span>
+        </label>
+        <span class="switch-label" id="toggle-label">off (выкл)</span>
+      </form>
+      <div>
+        <span id="generated-link-container">
+          <a id="generated-link" href="#" target="_blank">Ссылка появится здесь</a>
+        </span>
+      </div>
+      <div style="margin-top: 1em; padding: 1em; background: #f0f8ff; border: 1px solid #b3d8ff; border-radius: 6px;">
+        <h3 style="margin: 0 0 0.5em 0; color: #1565c0;">Таймеры автоматического включения</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 1em; align-items: center; margin-bottom: 1em;">
+          <label for="timer-minutes">Время в минутах:</label>
+          <input type="number" id="timer-minutes" min="1" max="1440" value="5" style="width: 80px; padding: 0.3em;">
+          <button type="button" id="start-timer-btn"
+            style="background: #4caf50; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer;">Добавить
+            таймер</button>
+          <button type="button" id="clear-all-timers-btn"
+            style="background: #f44336; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer;">Очистить
+            все</button>
+        </div>
+        <div id="active-timers" style="max-height: 200px; overflow-y: auto;"></div>
+      </div>
+      <script>
+        function updateCameraLink() {
+          const ip = document.getElementById('plaza-select').value;
+          const cam = parseInt(document.getElementById('camera-number').value, 10);
+          const isOn = document.getElementById('action-toggle').checked;
+          const action = isOn ? 'on' : 'off';
+
+          // Определяем front или rear
+          const frontCams = [1, 2, 3, 7, 8, 9];
+          const prefix = frontCams.includes(cam) ? 'ocrFrontAndIrGRNZ' : 'ocrRearAndIrGRNZ';
+
+          // Генерация URL
+          const url = `http://${ip}:8001/${prefix}${cam}?action=${action}`;
+          const link = document.getElementById('generated-link');
+          link.href = url;
+          link.textContent = url;
+
+          // Подпись переключателя
+          document.getElementById('toggle-label').textContent = isOn ? 'on (вкл)' : 'off (выкл)';
+        }
+
+        document.getElementById('plaza-select').addEventListener('change', updateCameraLink);
+        document.getElementById('camera-number').addEventListener('change', updateCameraLink);
+        document.getElementById('action-toggle').addEventListener('change', updateCameraLink);
+
+        // Инициализация при загрузке
+        updateCameraLink();
+      </script>
+
+    </div>
+
+    <div class="section">
+      <h2>SSH терминал для OCR-контроллеров</h2>
+      <form id="ssh-form" style="margin-bottom: 1em; display: flex; flex-wrap: wrap; gap: 1em; align-items: center;">
+        <label for="ocr-plaza">Плаза:</label>
+        <select id="ocr-plaza" name="ocr-plaza">
+          <option value="TP1">TP1</option>
+          <option value="TP1.2">TP1.2</option>
+          <option value="TP2">TP2</option>
+          <option value="TP3">TP3</option>
+          <option value="TP4">TP4</option>
+          <option value="TP5">TP5</option>
+          <option value="TP5.2">TP5.2</option>
+        </select>
+        <label for="ocr-direction">Направление:</label>
+        <select id="ocr-direction" name="ocr-direction">
+          <option value="direct">Прямое</option>
+          <option value="reverse">Обратное</option>
+        </select>
+        <label for="username">Пользователь:</label>
+        <input type="text" id="username" value="user" style="width: 80px;">
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" value="JQA-HLF-268-887-713-153" style="width: 180px;">
+        <button type="button" id="ssh-connect-btn">Подключиться по SSH</button>
+        <button type="button" id="sudo-btn">Войти в sudo su</button>
+      </form>
+      <div style="margin-bottom: 0.7em; display: flex; gap: 1em;">
+        <button type="button" id="restart-service-btn" disabled>Перезагрузить службу камеры</button>
+        <input type="text" id="ping-ip" placeholder="IP камеры для пинга" style="width: 140px;">
+        <select id="ping-ip-select" style="width: 150px;">
+          <option value="">Выберите IP камеры</option>
+          <option value="192.168.1.1">192.168.1.1</option>
+          <option value="192.168.2.1">192.168.2.1</option>
+          <option value="192.168.3.1">192.168.3.1</option>
+          <option value="192.168.4.1">192.168.4.1</option>
+          <option value="192.168.5.1">192.168.5.1</option>
+          <option value="192.168.6.1">192.168.6.1</option>
+        </select>
+        <button type="button" id="ping-btn" disabled>Пинговать</button>
+      </div>
+      <div id="terminal"></div>
+    </div>
+
+    <div class="section">
+      <h2>SSH и перезагрузка службы камер</h2>
+      <p>Для ручной перезагрузки службы камер выполните следующие действия:</p>
+      <pre class="code-block">
+ssh user@10.2.61.10
+# пароль: JQA-HLF-268-887-713-153
+cd /opt/lpr
+./restart.sh
+        </pre>
+    </div>
+
+    <div class="section">
+      <h2>IP адреса серверов IO</h2>
+      <table class="ip-table">
+        <tr>
+          <th>Плаза</th>
+          <th>IP ПЛК</th>
+        </tr>
+        <tr>
+          <td>TP1</td>
+          <td>10.2.60.7</td>
+        </tr>
+        <tr>
+          <td>TP1.2</td>
+          <td>10.2.62.7</td>
+        </tr>
+        <tr>
+          <td>TP2</td>
+          <td>10.2.64.7</td>
+        </tr>
+        <tr>
+          <td>TP3</td>
+          <td>10.2.68.7</td>
+        </tr>
+        <tr>
+          <td>TP4</td>
+          <td>10.2.72.7</td>
+        </tr>
+        <tr>
+          <td>TP5</td>
+          <td>10.2.76.7</td>
+        </tr>
+        <tr>
+          <td>TP5.2</td>
+          <td>10.2.78.7</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Контроллеры OCR</h2>
+      <table class="ip-table">
+        <tr>
+          <th>Плаза</th>
+          <th>Прямое направление</th>
+          <th>Обратное направление</th>
+        </tr>
+        <tr>
+          <td>TP1</td>
+          <td>10.2.60.10</td>
+          <td>10.2.61.10</td>
+        </tr>
+        <tr>
+          <td>TP1.2</td>
+          <td>10.2.62.10</td>
+          <td>10.2.63.10</td>
+        </tr>
+        <tr>
+          <td>TP2</td>
+          <td>10.2.64.10</td>
+          <td>10.2.65.10</td>
+        </tr>
+        <tr>
+          <td>TP3</td>
+          <td>10.2.68.10</td>
+          <td>10.2.69.10</td>
+        </tr>
+        <tr>
+          <td>TP4</td>
+          <td>10.2.72.10</td>
+          <td>10.2.73.10</td>
+        </tr>
+        <tr>
+          <td>TP5</td>
+          <td>10.2.76.10</td>
+          <td>10.2.77.10</td>
+        </tr>
+        <tr>
+          <td>TP5.2</td>
+          <td>10.2.78.10</td>
+          <td>10.2.79.10</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+  <script src="../script-img.js"></script>
+  <script src="connectSSH.js"></script>
+  <script src="terminal-controls.js"></script>
+  <script>
+    // Карта IP OCR-контроллеров
+    const ocrMap = {
+      'TP1': { direct: '10.2.60.10', reverse: '10.2.61.10' },
+      'TP1.2': { direct: '10.2.62.10', reverse: '10.2.63.10' },
+      'TP2': { direct: '10.2.64.10', reverse: '10.2.65.10' },
+      'TP3': { direct: '10.2.68.10', reverse: '10.2.69.10' },
+      'TP4': { direct: '10.2.72.10', reverse: '10.2.73.10' },
+      'TP5': { direct: '10.2.76.10', reverse: '10.2.77.10' },
+      'TP5.2': { direct: '10.2.78.10', reverse: '10.2.79.10' }
+    };
+    function getSelectedOCRIp() {
+      const plaza = document.getElementById('ocr-plaza').value;
+      const dir = document.getElementById('ocr-direction').value;
+      return ocrMap[plaza][dir];
+    }
+    document.getElementById('ssh-connect-btn').onclick = function () {
+      document.getElementById('ip').value = getSelectedOCRIp();
+      window.connectSSH();
+      setTimeout(() => {
+        document.getElementById('restart-service-btn').disabled = false;
+        document.getElementById('ping-btn').disabled = false;
+      }, 1000);
+    };
+    // Для совместимости с connectSSH.js
+    if (!document.getElementById('ip')) {
+      const ipInput = document.createElement('input');
+      ipInput.type = 'hidden';
+      ipInput.id = 'ip';
+      document.body.appendChild(ipInput);
+    }
+    // Перезагрузка службы
+    document.getElementById('restart-service-btn').onclick = function () {
+      if (window.isConnected !== false) {
+        const cmd = 'cd /opt/lpr && ./restart.sh\n';
+        window.socket.send(cmd);
+      }
+    };
+    // Пинг камеры
+    document.getElementById('ping-btn').onclick = function () {
+      const ip = document.getElementById('ping-ip').value.trim();
+      if (ip && window.isConnected !== false) {
+        window.socket.send('ping -c 4 ' + ip + '\n');
+      }
+    };
+    document.getElementById('sudo-btn').onclick = function () {
+      if (window.isConnected !== false) {
+        window.socket.send('sudo su\n');
+        setTimeout(() => {
+          const password = document.getElementById('password').value;
+          window.socket.send(password + '\n');
+        }, 800); // задержка, чтобы появилось приглашение на ввод пароля
+      }
+    };
+    // Селект для быстрого выбора IP камеры
+    document.getElementById('ping-ip-select').onchange = function () {
+      const val = this.value;
+      if (val) document.getElementById('ping-ip').value = val;
+    };
+
+    // Система множественных таймеров
+    let activeTimers = new Map();
+    let timerIdCounter = 0;
+
+    function getPlazaName(ip) {
+      const plazaMap = {
+        '10.2.60.7': 'TP1',
+        '10.2.62.7': 'TP1.2',
+        '10.2.64.7': 'TP2',
+        '10.2.68.7': 'TP3',
+        '10.2.72.7': 'TP4',
+        '10.2.76.7': 'TP5',
+        '10.2.78.7': 'TP5.2'
+      };
+      return plazaMap[ip] || ip;
+    }
+
+    function createTimerElement(timerId, plazaName, cam, endTime) {
+      const timerDiv = document.createElement('div');
+      timerDiv.id = `timer-${timerId}`;
+      timerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5em; margin: 0.3em 0; background: #e8f5e8; border: 1px solid #4caf50; border-radius: 4px; font-size: 0.9em;';
+
+      const infoSpan = document.createElement('span');
+      infoSpan.innerHTML = `<strong>${plazaName} - Камера ${cam}</strong>`;
+
+      const statusSpan = document.createElement('span');
+      statusSpan.id = `status-${timerId}`;
+      statusSpan.style.color = '#666';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = '✕';
+      cancelBtn.style.cssText = 'background: #f44336; color: white; border: none; padding: 0.2em 0.5em; border-radius: 3px; cursor: pointer; font-size: 0.8em;';
+      cancelBtn.onclick = () => cancelTimer(timerId);
+
+      timerDiv.appendChild(infoSpan);
+      timerDiv.appendChild(statusSpan);
+      timerDiv.appendChild(cancelBtn);
+
+      return timerDiv;
+    }
+
+    function updateTimerDisplay() {
+      activeTimers.forEach((timer, timerId) => {
+        const statusElement = document.getElementById(`status-${timerId}`);
+        if (!statusElement) return;
+
+        const now = new Date();
+        const remaining = Math.max(0, timer.endTime - now);
+
+        if (remaining <= 0) {
+          // Включаем камеру
+          const onUrl = `http://${timer.plaza}:8001/${timer.prefix}${timer.cam}?action=on`;
+          window.open(onUrl, '_blank');
+
+          // Удаляем таймер
+          cancelTimer(timerId);
+
+          // Показываем уведомление
+          const notification = document.createElement('div');
+          notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 1em; border-radius: 4px; z-index: 1000;';
+          notification.textContent = `Камера ${getPlazaName(timer.plaza)} - ${timer.cam} автоматически включена!`;
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 3000);
+        } else {
+          const remainingMinutes = Math.ceil(remaining / 60000);
+          statusElement.textContent = `Осталось: ${remainingMinutes} мин (${timer.endTime.toLocaleTimeString()})`;
+        }
+      });
+    }
+
+    function cancelTimer(timerId) {
+      const timer = activeTimers.get(timerId);
+      if (timer) {
+        clearInterval(timer.interval);
+        activeTimers.delete(timerId);
+        const timerElement = document.getElementById(`timer-${timerId}`);
+        if (timerElement) timerElement.remove();
+      }
+    }
+
+    function clearAllTimers() {
+      activeTimers.forEach((timer, timerId) => {
+        clearInterval(timer.interval);
+        const timerElement = document.getElementById(`timer-${timerId}`);
+        if (timerElement) timerElement.remove();
+      });
+      activeTimers.clear();
+    }
+
+    document.getElementById('start-timer-btn').onclick = function () {
+      const minutes = parseInt(document.getElementById('timer-minutes').value);
+      if (minutes < 1 || minutes > 1440) {
+        alert('Введите время от 1 до 1440 минут');
+        return;
+      }
+
+      const plaza = document.getElementById('plaza-select').value;
+      const cam = parseInt(document.getElementById('camera-number').value, 10);
+      const plazaName = getPlazaName(plaza);
+
+      // Проверяем, нет ли уже таймера для этой камеры
+      const existingTimer = Array.from(activeTimers.values()).find(t => t.plaza === plaza && t.cam === cam);
+      if (existingTimer) {
+        alert(`Таймер для камеры ${plazaName} - ${cam} уже запущен!`);
+        return;
+      }
+
+      // Определяем front или rear (та же логика, что в updateCameraLink)
+      const frontCams = [1, 2, 3, 7, 8, 9];
+      const prefix = frontCams.includes(cam) ? 'ocrFrontAndIrGRNZ' : 'ocrRearAndIrGRNZ';
+
+      // Выключаем камеру
+      const offUrl = `http://${plaza}:8001/${prefix}${cam}?action=off`;
+      window.open(offUrl, '_blank');
+
+      // Создаем новый таймер
+      const timerId = ++timerIdCounter;
+      const endTime = new Date(Date.now() + minutes * 60000);
+
+      const timerElement = createTimerElement(timerId, plazaName, cam, endTime);
+      document.getElementById('active-timers').appendChild(timerElement);
+
+      const interval = setInterval(() => updateTimerDisplay(), 1000);
+
+      activeTimers.set(timerId, {
+        plaza,
+        cam,
+        prefix,
+        endTime,
+        interval
+      });
+
+      // Сразу обновляем отображение
+      updateTimerDisplay();
+    };
+
+    document.getElementById('clear-all-timers-btn').onclick = clearAllTimers;
+  </script>
+</body>
+
+</html>
